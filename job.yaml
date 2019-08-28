@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "codewind-liberty-build-job"
+  namespace: eclipse-che
+  labels:
+spec:
+  template:
+    spec:
+      volumes:
+      - name: liberty-project
+        persistentVolumeClaim:
+          claimName: claim-che-workspace7rlv8ld0
+      containers:
+      - name: "maven-build"
+        image: "docker.io/maven:3.6"
+        imagePullPolicy: Always
+        command: ["/bin/sh","-c"]
+        args: ["cd /tmp/project && ls -la && mvn -B compile -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/project/mc-target --log-file /tmp/project/maven.build.test.log"]
+        volumeMounts:
+        - name: liberty-project
+          mountPath: /tmp/project
+          subPath: "workspacejl5p7nvw20oasr2x/projects/alibertyproj123"
+      restartPolicy: Never
