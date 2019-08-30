@@ -11,6 +11,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
@@ -26,13 +27,37 @@ func main() {
 		panic(err.Error())
 	}
 
-	arg := os.Args[1]
-	fmt.Printf("The command chosen: %s\n", arg)
+	if len(os.Args) != 3 {
+		fmt.Println("Wrong usage of idcbuildtask tool...")
+		fmt.Println("Usage:")
+		fmt.Println("Argument 1: Project IDP Build Task Name")
+		fmt.Println("Argument 2: Project Name")
+		os.Exit(1)
+	}
+
+	taskName := os.Args[1]
+	fmt.Printf("The taskName chosen: %s\n", taskName)
+
+	projectName := os.Args[2]
+	fmt.Printf("The projectName chosen: %s\n", projectName)
 
 	buildTaskJob1 := "codewind-liberty-build-job"
-	namespace := "eclipse-che"
 
-	err = CreateBuildTaskKubeJob(clientset, buildTaskJob1, namespace, arg)
+	cheWorkspaceID := os.Getenv("CHE_WORKSPACE_ID")
+	if cheWorkspaceID == "" {
+		fmt.Println("Che Workspace ID not set and unable to run the IDP Kube Job, exiting...")
+		os.Exit(1)
+	} else {
+		fmt.Printf("The Che Workspace ID: %s\n", cheWorkspaceID)
+	}
+
+	namespace := GetCurrentNamespace()
+	fmt.Printf("The Che Codewind Namespace: %s\n", namespace)
+
+	workspacePVC := GetWorkspacePVC(clientset, namespace, cheWorkspaceID)
+	fmt.Printf("The Che Codewind PVC: %s\n", workspacePVC)
+
+	err = CreateBuildTaskKubeJob(clientset, buildTaskJob1, namespace, cheWorkspaceID, workspacePVC, taskName, projectName)
 	if err != nil {
 		fmt.Println("Failed to create a job, exiting...")
 		panic(err.Error())
@@ -76,32 +101,15 @@ func main() {
 	}
 
 	fmt.Println("And that's it folks...")
-
-	/*pods, err := clientset.CoreV1().Pods("eclipse-che").List(metav1.ListOptions{})
-	// _, err = clientset.CoreV1().Pods("default").Get("example-xxxxx", metav1.GetOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
-
-	for _, pod := range pods.Items {
-		if strings.Contains(pod.Name, "codewind-liberty-build-job") {
-			fmt.Println(pod.Name)
-			fmt.Println(pod.Status.Phase)
-			fmt.Println(pod.Status.ContainerStatuses[0].State.Terminated.Reason)
-		}
-	}*/
-
-	// namespace := GetCurrentNamespace()
-	// fmt.Println("Hello,", namespace)
 }
 
 // CreateBuildTaskKubeJob creates a Kubernetes Job
-func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string, namespace string, command string) error {
+func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string, namespace string, cheWorkspaceID string, workspacePVC string, taskName string, projectName string) error {
 	fmt.Printf("Creating job %s\n", buildTaskJob)
 	// Create a Kube job to run mvn compile for a Liberty project
 	mvnCommand := "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
 
-	if command == "package" {
+	if taskName == "package" {
 		mvnCommand = "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package liberty:install-apps -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
 	}
 
@@ -120,7 +128,7 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 							Name: "liberty-project",
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "claim-che-workspaceahpxhuzg",
+									ClaimName: workspacePVC,
 								},
 							},
 						},
@@ -136,7 +144,7 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 								{
 									Name:      "liberty-project",
 									MountPath: "/home/default/app",
-									SubPath:   "workspacel3gv35pl4gf4iyzp/projects/maysunliberty2",
+									SubPath:   cheWorkspaceID + "/projects/" + projectName,
 								},
 							},
 						},
@@ -153,4 +161,55 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 
 	fmt.Printf("The job %s has been created\n", kubeJob.Name)
 	return nil
+}
+
+// GetWorkspacePVC retrieves the PVC (Persistent Volume Claim) associated with the Che workspace we're deploying Codewind in
+func GetWorkspacePVC(clientset *kubernetes.Clientset, namespace string, cheWorkspaceID string) string {
+	var pvcName string
+
+	PVCs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{
+		LabelSelector: "che.workspace.volume_name=projects,che.workspace_id=" + cheWorkspaceID,
+	})
+	if err != nil || PVCs == nil {
+		fmt.Printf("Error, unable to retrieve PVCs: %v\n", err)
+		os.Exit(1)
+	} else if len(PVCs.Items) < 1 {
+		// We couldn't find the workspace PVC, so need to find an alternative.
+		PVCs, err = clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{
+			LabelSelector: "che.workspace_id=" + cheWorkspaceID,
+		})
+		if err != nil || PVCs == nil {
+			fmt.Printf("Error, unable to retrieve PVCs: %v\n", err)
+			os.Exit(1)
+		} else if len(PVCs.Items) != 1 {
+			pvcName = "claim-che-workspace"
+		} else {
+			pvcName = PVCs.Items[0].GetName()
+		}
+	} else {
+		pvcName = PVCs.Items[0].GetName()
+	}
+
+	return pvcName
+}
+
+// GetKubeClientConfig retrieves the Kubernetes client config from the cluster
+func GetKubeClientConfig() clientcmd.ClientConfig {
+	// Retrieve the Kube client config
+	clientconfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{},
+	)
+	return clientconfig
+}
+
+// GetCurrentNamespace gets the current namespace in the Kubernetes context
+func GetCurrentNamespace() string {
+	// Instantiate loader for kubeconfig file.
+	kubeconfig := GetKubeClientConfig()
+	namespace, _, err := kubeconfig.Namespace()
+	if err != nil {
+		panic(err)
+	}
+	return namespace
 }
