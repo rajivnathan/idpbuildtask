@@ -99,10 +99,10 @@ func main() {
 func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string, namespace string, command string) error {
 	fmt.Printf("Creating job %s\n", buildTaskJob)
 	// Create a Kube job to run mvn compile for a Liberty project
-	mvnCommand := "cd /home/default/app && ls -la && mvn -B compile -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/home/default/app/mc-target --log-file /home/default/app/maven.compile.test.log && chown -R 1001 /home/default/app/"
+	mvnCommand := "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
 
 	if command == "package" {
-		mvnCommand = "cd /home/default/app && ls -la && mvn -B package -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/home/default/app/mc-target --log-file /home/default/app/maven.package.test.log && chown -R 1001 /home/default/app/"
+		mvnCommand = "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package liberty:install-apps -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
 	}
 
 	fmt.Printf("Mvn Command: %s\n", mvnCommand)
@@ -120,7 +120,7 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 							Name: "liberty-project",
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "claim-che-workspace6kfl7t0q",
+									ClaimName: "claim-che-workspaceahpxhuzg",
 								},
 							},
 						},
@@ -136,7 +136,7 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 								{
 									Name:      "liberty-project",
 									MountPath: "/home/default/app",
-									SubPath:   "workspace05bhbslshm9de3jl/projects/arandomjava1",
+									SubPath:   "workspacel3gv35pl4gf4iyzp/projects/maysunliberty2",
 								},
 							},
 						},
