@@ -504,16 +504,7 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 								Privileged: &codewind.Privileged,
 							},
 							VolumeMounts: volumeMounts,
-							Command:      []string{"/usr/bin/tail"},
-							Args:         []string{"-f", "/dev/null"},
-							Lifecycle: &corev1.Lifecycle{
-								PostStart: &corev1.Handler{
-									Exec: &corev1.ExecAction{
-										Command: []string{"/bin/bash", "-c", "/opt/ibm/wlp/bin/server start"},
-									},
-								},
-							},
-							Env: envVars,
+							Env:          envVars,
 						},
 					},
 				},
