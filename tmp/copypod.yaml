@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: copy-pod-mock
+spec:
+  containers:
+  - name: alpine
+    image: alpine:latest
+    resources:
+      requests:
+        memory: "50Mi"
+        cpu: "0.5"
+      limits:
+        cpu: "1"
+        memory: "100Mi"
+    command: ["/usr/bin/tail"]
+    args: ["-f", "/dev/null"]
+    volumeMounts:
+    - name: idp-volume
+      mountPath: /data/idp
+      subPath: projects/projA
+  volumes:
+  - name: idp-volume
+    persistentVolumeClaim:
+      claimName: idp-data-volume
