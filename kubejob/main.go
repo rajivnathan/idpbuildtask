@@ -61,6 +61,7 @@ func main() {
 	fmt.Printf("The projectName chosen: %s\n", projectName)
 
 	buildTaskJob1 := "codewind-liberty-build-job"
+	// runTaskJob1 := "codewind-liberty-run-job"
 
 	cheWorkspaceID := os.Getenv("CHE_WORKSPACE_ID")
 	if cheWorkspaceID == "" {
@@ -74,7 +75,7 @@ func main() {
 	fmt.Printf("The Che Codewind Namespace: %s\n", namespace)
 
 	workspacePVC := GetWorkspacePVC(clientset, namespace, cheWorkspaceID)
-	fmt.Printf("The Che Codewind PVC: %s\n", workspacePVC)
+	fmt.Printf("The IDP Vol PVC: %s\n", workspacePVC)
 
 	serviceAccountName := GetWorkspaceServiceAccount(clientset, namespace, cheWorkspaceID)
 	fmt.Printf("The Che Service Account: %s\n", serviceAccountName)
@@ -130,7 +131,7 @@ func main() {
 	// Create the Codewind deployment object
 	codewindInstance := Codewind{
 		PFEName:            "cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
-		PFEImage:           "docker.io/maysunfaisal/cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
+		PFEImage:           "websphere-liberty:19.0.0.3-webProfile7",
 		Namespace:          namespace,
 		WorkspaceID:        cheWorkspaceID,
 		PVCName:            workspacePVC,
@@ -159,20 +160,69 @@ func main() {
 		}
 	}
 
+	// err = CreateRunTaskKubeJob(clientset, runTaskJob1, namespace, cheWorkspaceID, workspacePVC, taskName, projectName)
+	// if err != nil {
+	// 	fmt.Println("Failed to create a job, exiting...")
+	// 	panic(err.Error())
+	// }
+
+	// // Loop and see if the job either succeeded or failed
+	// loop = true
+	// for loop == true {
+	// 	jobs, err := clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{})
+	// 	if err != nil {
+	// 		panic(err.Error())
+	// 	}
+	// 	for _, job := range jobs.Items {
+	// 		if strings.Contains(job.Name, runTaskJob1) {
+	// 			succeeded := job.Status.Succeeded
+	// 			failed := job.Status.Failed
+	// 			if succeeded == 1 {
+	// 				fmt.Printf("The job %s succeeded\n", job.Name)
+	// 				loop = false
+	// 			} else if failed > 0 {
+	// 				fmt.Printf("The job %s failed\n", job.Name)
+	// 				loop = false
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	// if loop == false {
+	// 	// delete the job
+	// 	gracePeriodSeconds := int64(0)
+	// 	deletionPolicy := metav1.DeletePropagationForeground
+	// 	err := clientset.BatchV1().Jobs(namespace).Delete(runTaskJob1, &metav1.DeleteOptions{
+	// 		PropagationPolicy:  &deletionPolicy,
+	// 		GracePeriodSeconds: &gracePeriodSeconds,
+	// 	})
+	// 	if err != nil {
+	// 		panic(err.Error())
+	// 	} else {
+	// 		fmt.Printf("The job %s has been deleted\n", runTaskJob1)
+	// 	}
+	// }
+
 	fmt.Println("And that's it folks...")
 }
 
-// CreateBuildTaskKubeJob creates a Kubernetes Job
-func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string, namespace string, cheWorkspaceID string, workspacePVC string, taskName string, projectName string) error {
-	fmt.Printf("Creating job %s\n", buildTaskJob)
+// CreateBuildTaskKubeJob creates a Build Task Kubernetes Job
+func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, jobName string, namespace string, cheWorkspaceID string, workspacePVC string, taskName string, projectName string) error {
+	fmt.Printf("Creating job %s\n", jobName)
 	// Create a Kube job to run mvn compile for a Liberty project
-	mvnCommand := "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package -Dmaven.repo.local=/tmp/app/.m2/repository -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
+	// mvnCommand := "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package -Dmaven.repo.local=/tmp/app/.m2/repository -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
+
+	mvnCommand := "echo changing dir to /home/default/app && cd /home/default/app && echo chown, listing and running mvn in /home/default/app: && chown -fR 1001 /home/default/app && ls -la && mvn -B clean package -Dmaven.repo.local=/home/default/app/.m2/repository -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/home/default/app/buildoutput --log-file /home/default/app/maven.package.test.log && chown -fR 1001 /home/default/app/buildoutput && echo listing /home/default/app after mvn and chown 1001 buildoutput && ls -la && echo rm -rf /home/default/app/buildartifacts and copying artifacts && rm -rf /home/default/app/buildartifacts && mkdir -p /home/default/app/buildartifacts/ && cp -r /home/default/app/buildoutput/liberty/wlp/usr/servers/defaultServer/* /home/default/app/buildartifacts/ && cp -r /home/default/app/buildoutput/liberty/wlp/usr/shared/resources/ /home/default/app/buildartifacts/ && cp /home/default/app/src/main/liberty/config/jvmbx.options /home/default/app/buildartifacts/jvm.options && echo chown the buildartifacts dir && chown -fR 1001 /home/default/app/buildartifacts"
+
+	if taskName == "inc" {
+		mvnCommand = "echo changing dir to /home/default/app && cd /home/default/app && echo chown, listing and running mvn in /home/default/app: && chown -fR 1001 /home/default/app && ls -la && mvn -B clean package -Dmaven.repo.local=/home/default/app/.m2/repository -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/home/default/app/buildoutput --log-file /home/default/app/maven.package.test.log && chown -fR 1001 /home/default/app/buildoutput && echo listing /home/default/app after mvn and chown 1001 buildoutput && ls -la && echo copying artifacts && cp -rf /home/default/app/buildoutput/liberty/wlp/usr/servers/defaultServer/apps/* /home/default/app/buildartifacts/apps/ && echo chown the buildartifacts apps dir && chown -fR 1001 /home/default/app/buildartifacts/apps"
+	}
 
 	fmt.Printf("Mvn Command: %s\n", mvnCommand)
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      buildTaskJob,
+			Name:      jobName,
 			Namespace: namespace,
 		},
 		Spec: batchv1.JobSpec{
@@ -199,7 +249,7 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 								{
 									Name:      "liberty-project",
 									MountPath: "/home/default/app",
-									SubPath:   cheWorkspaceID + "/projects/" + projectName,
+									// SubPath:   cheWorkspaceID + "/projects/" + projectName,
 								},
 							},
 						},
@@ -218,12 +268,68 @@ func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string
 	return nil
 }
 
+// // CreateRunTaskKubeJob creates a Run Task Kubernetes Job
+// func CreateRunTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string, namespace string, cheWorkspaceID string, workspacePVC string, taskName string, projectName string) error {
+// 	fmt.Printf("Creating job %s\n", buildTaskJob)
+
+// 	runCommand := "echo changing dir to /home/default/app && cd /home/default/app && "
+
+// 	fmt.Printf("Mvn Command: %s\n", mvnCommand)
+
+// 	job := &batchv1.Job{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      buildTaskJob,
+// 			Namespace: namespace,
+// 		},
+// 		Spec: batchv1.JobSpec{
+// 			Template: corev1.PodTemplateSpec{
+// 				Spec: corev1.PodSpec{
+// 					Volumes: []corev1.Volume{
+// 						{
+// 							Name: "liberty-project",
+// 							VolumeSource: corev1.VolumeSource{
+// 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+// 									ClaimName: workspacePVC,
+// 								},
+// 							},
+// 						},
+// 					},
+// 					Containers: []corev1.Container{
+// 						{
+// 							Name:            "maven-build",
+// 							Image:           "docker.io/maven:3.6",
+// 							ImagePullPolicy: corev1.PullAlways,
+// 							Command:         []string{"/bin/sh", "-c"},
+// 							Args:            []string{mvnCommand},
+// 							VolumeMounts: []corev1.VolumeMount{
+// 								{
+// 									Name:      "liberty-project",
+// 									MountPath: "/home/default/app",
+// 									// SubPath:   cheWorkspaceID + "/projects/" + projectName,
+// 								},
+// 							},
+// 						},
+// 					},
+// 					RestartPolicy: corev1.RestartPolicyNever,
+// 				},
+// 			},
+// 		},
+// 	}
+// 	kubeJob, err := clientset.BatchV1().Jobs(namespace).Create(job)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	fmt.Printf("The job %s has been created\n", kubeJob.Name)
+// 	return nil
+// }
+
 // GetWorkspacePVC retrieves the PVC (Persistent Volume Claim) associated with the Che workspace we're deploying Codewind in
 func GetWorkspacePVC(clientset *kubernetes.Clientset, namespace string, cheWorkspaceID string) string {
 	var pvcName string
 
 	PVCs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{
-		LabelSelector: "che.workspace.volume_name=projects,che.workspace_id=" + cheWorkspaceID,
+		LabelSelector: "artifact=codewindidpvolume",
 	})
 	if err != nil || PVCs == nil {
 		fmt.Printf("Error, unable to retrieve PVCs: %v\n", err)
@@ -340,7 +446,7 @@ func setPFEVolumes(codewind Codewind) ([]corev1.Volume, []corev1.VolumeMount) {
 
 	volumes := []corev1.Volume{
 		{
-			Name: "shared-workspace",
+			Name: "idp-volume",
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: codewind.PVCName,
@@ -351,9 +457,9 @@ func setPFEVolumes(codewind Codewind) ([]corev1.Volume, []corev1.VolumeMount) {
 
 	volumeMounts := []corev1.VolumeMount{
 		{
-			Name:      "shared-workspace",
-			MountPath: "/codewind-workspace",
-			SubPath:   codewind.WorkspaceID + "/projects",
+			Name:      "idp-volume",
+			MountPath: "/config",
+			SubPath:   "buildartifacts/",
 		},
 	}
 
@@ -454,7 +560,7 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 	controller := true
 	replicas := int32(1)
 	labels2 := map[string]string{
-		"app":     "javamicroprofiletemplate-selector",
+		"app":     "libertyidp-selector",
 		"version": "current",
 		"release": codewind.PFEName,
 	}
@@ -499,9 +605,16 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 								Privileged: &codewind.Privileged,
 							},
 							VolumeMounts: volumeMounts,
-							Command:      []string{"/bin/sh", "-c", "--"},
-							Args:         []string{"/home/default/artifacts/new_entrypoint.sh"},
-							Env:          envVars,
+							Command:      []string{"/usr/bin/tail"},
+							Args:         []string{"-f", "/dev/null"},
+							Lifecycle: &corev1.Lifecycle{
+								PostStart: &corev1.Handler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"/bin/bash", "-c", "/opt/ibm/wlp/bin/server start"},
+									},
+								},
+							},
+							Env: envVars,
 						},
 					},
 				},
@@ -553,7 +666,7 @@ func generateService(codewind Codewind, labels map[string]string) corev1.Service
 				},
 			},
 			Selector: map[string]string{
-				"app": "javamicroprofiletemplate-selector",
+				"app": "libertyidp-selector",
 			},
 		},
 	}

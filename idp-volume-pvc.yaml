@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: idp-volume-claim
+  labels:
+    artifact: codewindidpvolume
+    project: cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
