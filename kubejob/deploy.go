@@ -7,37 +7,37 @@ import (
 )
 
 // createPFEDeploy creates a Kubernetes deployment
-func createPFEDeploy(microprofile Microprofile, projectName string) appsv1.Deployment {
+func createPFEDeploy(buildtask BuildTask, projectName string) appsv1.Deployment {
 	labels := map[string]string{
 		"chart":   "javamicroprofiletemplate-1.0.0",
-		"release": microprofile.Name,
+		"release": buildtask.Name,
 	}
 
-	volumes, volumeMounts := setPFEVolumes(microprofile, projectName)
-	envVars := setPFEEnvVars(microprofile)
+	volumes, volumeMounts := setPFEVolumes(buildtask, projectName)
+	envVars := setPFEEnvVars(buildtask)
 
-	return generateDeployment(microprofile, "javamicroprofiletemplate", microprofile.Image, volumes, volumeMounts, envVars, labels)
+	return generateDeployment(buildtask, "javamicroprofiletemplate", buildtask.Image, volumes, volumeMounts, envVars, labels)
 }
 
 // createPFEService creates a Kubernetes service for Codewind, exposing port 9191
-func createPFEService(microprofile Microprofile) corev1.Service {
+func createPFEService(buildtask BuildTask) corev1.Service {
 	labels := map[string]string{
 		"chart":   "javamicroprofiletemplate-1.0.0",
-		"release": microprofile.Name,
+		"release": buildtask.Name,
 	}
-	return generateService(microprofile, labels)
+	return generateService(buildtask, labels)
 }
 
 // setPFEVolumes returns the 3 volumes & corresponding volume mounts required by the PFE container:
 // project workspace, buildah volume, and the docker registry secret (the latter of which is optional)
-func setPFEVolumes(microprofile Microprofile, projectName string) ([]corev1.Volume, []corev1.VolumeMount) {
+func setPFEVolumes(buildtask BuildTask, projectName string) ([]corev1.Volume, []corev1.VolumeMount) {
 
 	volumes := []corev1.Volume{
 		{
 			Name: "idp-volume",
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: microprofile.PVCName,
+					ClaimName: buildtask.PVCName,
 				},
 			},
 		},
@@ -54,7 +54,7 @@ func setPFEVolumes(microprofile Microprofile, projectName string) ([]corev1.Volu
 	return volumes, volumeMounts
 }
 
-func setPFEEnvVars(microprofile Microprofile) []corev1.EnvVar {
+func setPFEEnvVars(buildTask BuildTask) []corev1.EnvVar {
 	booleanTrue := bool(true)
 
 	return []corev1.EnvVar{
@@ -143,14 +143,14 @@ func setPFEEnvVars(microprofile Microprofile) []corev1.EnvVar {
 
 // generateDeployment returns a Kubernetes deployment object with the given name for the given image.
 // Additionally, volume/volumemounts and env vars can be specified.
-func generateDeployment(microprofile Microprofile, name string, image string, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount, envVars []corev1.EnvVar, labels map[string]string) appsv1.Deployment {
+func generateDeployment(buildtask BuildTask, name string, image string, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount, envVars []corev1.EnvVar, labels map[string]string) appsv1.Deployment {
 	// blockOwnerDeletion := true
 	// controller := true
 	replicas := int32(1)
 	labels2 := map[string]string{
 		"app":     "javamicroprofiletemplate-selector",
 		"version": "current",
-		"release": microprofile.Name,
+		"release": buildtask.Name,
 	}
 	deployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -158,8 +158,8 @@ func generateDeployment(microprofile Microprofile, name string, image string, vo
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      microprofile.Name,
-			Namespace: microprofile.Namespace,
+			Name:      buildtask.Name,
+			Namespace: buildtask.Namespace,
 			Labels:    labels,
 			// OwnerReferences: []metav1.OwnerReference{
 			// 	{
@@ -182,7 +182,7 @@ func generateDeployment(microprofile Microprofile, name string, image string, vo
 					Labels: labels2,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: microprofile.ServiceAccountName,
+					ServiceAccountName: buildtask.ServiceAccountName,
 					Volumes:            volumes,
 					Containers: []corev1.Container{
 						{
@@ -190,7 +190,7 @@ func generateDeployment(microprofile Microprofile, name string, image string, vo
 							Image:           image,
 							ImagePullPolicy: corev1.PullAlways,
 							SecurityContext: &corev1.SecurityContext{
-								Privileged: &microprofile.Privileged,
+								Privileged: &buildtask.Privileged,
 							},
 							VolumeMounts: volumeMounts,
 							Env:          envVars,
@@ -205,7 +205,7 @@ func generateDeployment(microprofile Microprofile, name string, image string, vo
 
 // generateService returns a Kubernetes service object with the given name, exposed over the specified port
 // for the container with the given labels.
-func generateService(microprofile Microprofile, labels map[string]string) corev1.Service {
+func generateService(buildtask BuildTask, labels map[string]string) corev1.Service {
 	// blockOwnerDeletion := true
 	// controller := true
 
@@ -218,8 +218,8 @@ func generateService(microprofile Microprofile, labels map[string]string) corev1
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      microprofile.Name,
-			Namespace: microprofile.Namespace,
+			Name:      buildtask.Name,
+			Namespace: buildtask.Namespace,
 			Labels:    labels,
 			// OwnerReferences: []metav1.OwnerReference{
 			// 	{

@@ -16,7 +16,7 @@ import (
 )
 
 //Microprofile is a struct of essential data
-type Microprofile struct {
+type BuildTask struct {
 	Name               string
 	Image              string
 	Namespace          string
@@ -181,7 +181,7 @@ func main() {
 	}
 
 	// Create the Codewind deployment object
-	MicroprofileInstance := Microprofile{
+	BuildTaskInstance := BuildTask{
 		Name:               "cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
 		Image:              "websphere-liberty:19.0.0.3-webProfile7",
 		Namespace:          namespace,
@@ -194,8 +194,8 @@ func main() {
 
 	if taskName == "full" {
 		// Deploy Application
-		deploy := createPFEDeploy(MicroprofileInstance, projectName)
-		service := createPFEService(MicroprofileInstance)
+		deploy := createPFEDeploy(BuildTaskInstance, projectName)
+		service := createPFEService(BuildTaskInstance)
 
 		fmt.Println("===============================")
 		fmt.Println("Deploying application...")
