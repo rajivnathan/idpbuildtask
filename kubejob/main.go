@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,24 +33,36 @@ type Codewind struct {
 }
 
 func main() {
-	fmt.Println("Hello, creating a basic Kube Job to run mvn on a Liberty Project.")
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
 	if len(os.Args) != 3 {
 		fmt.Println("Wrong usage of idcbuildtask tool...")
 		fmt.Println("Usage:")
 		fmt.Println("Argument 1: Project IDP Build Task Name")
 		fmt.Println("Argument 2: Project Name")
 		os.Exit(1)
+	}
+
+	fmt.Println("Hello, creating a basic Kube Job to run mvn on a Liberty Project.")
+
+	// creates the in-cluster config
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		fmt.Println("Not running in a cluster. Attempting to load kube context from local kubeconfig")
+		// initialize client-go clients
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{}
+		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+
+		clientConfig, err := kubeConfig.ClientConfig()
+		if err != nil {
+			panic(err.Error())
+		}
+		config = clientConfig
+
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
 	}
 
 	taskName := os.Args[1]
@@ -62,34 +73,71 @@ func main() {
 
 	buildTaskJob1 := "codewind-liberty-build-job"
 
-	cheWorkspaceID := os.Getenv("CHE_WORKSPACE_ID")
-	if cheWorkspaceID == "" {
-		fmt.Println("Che Workspace ID not set and unable to run the IDP Kube Job, exiting...")
-		os.Exit(1)
-	} else {
-		fmt.Printf("The Che Workspace ID: %s\n", cheWorkspaceID)
+	namespace := GetCurrentNamespace()
+	fmt.Printf("Current namespace: %s\n", namespace)
+
+	idpClaimName := GetIDPPVC(clientset, namespace, "app=idp")
+	fmt.Printf("Persistent Volume Claim: %s\n", idpClaimName)
+
+	serviceAccountName := "default"
+	fmt.Printf("Service Account: %s\n", serviceAccountName)
+
+	job, err := CreateBuildTaskKubeJob(buildTaskJob1, namespace, idpClaimName, "projects/"+projectName, projectName)
+	if err != nil {
+		fmt.Println("There was a problem with the job configuration, exiting...")
+		panic(err.Error())
 	}
 
-	namespace := GetCurrentNamespace()
-	fmt.Printf("The Che Codewind Namespace: %s\n", namespace)
-
-	workspacePVC := GetWorkspacePVC(clientset, namespace, cheWorkspaceID)
-	fmt.Printf("The Che Codewind PVC: %s\n", workspacePVC)
-
-	serviceAccountName := GetWorkspaceServiceAccount(clientset, namespace, cheWorkspaceID)
-	fmt.Printf("The Che Service Account: %s\n", serviceAccountName)
-
-	// Get the Owner reference name and uid
-	ownerReferenceName, ownerReferenceUID := GetOwnerReferences(clientset, namespace, cheWorkspaceID)
-	fmt.Printf("The Che ownerReferenceName: %s\n", ownerReferenceName)
-	fmt.Printf("The Che ownerReferenceUID: %s\n", ownerReferenceUID)
-
-	err = CreateBuildTaskKubeJob(clientset, buildTaskJob1, namespace, cheWorkspaceID, workspacePVC, taskName, projectName)
+	kubeJob, err := clientset.BatchV1().Jobs(namespace).Create(job)
 	if err != nil {
 		fmt.Println("Failed to create a job, exiting...")
 		panic(err.Error())
 	}
 
+	fmt.Printf("The job %s has been created\n", kubeJob.Name)
+
+	// Wait for pods to start running so that we can tail the logs
+	fmt.Printf("Waiting for pod to run\n")
+	foundRunningPod := false
+	for foundRunningPod == false {
+
+		podList, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+			LabelSelector: "job-name=codewind-liberty-build-job",
+			FieldSelector: "status.phase=Running",
+		})
+
+		if err != nil {
+			continue
+		}
+
+		for _, pod := range podList.Items {
+			fmt.Printf("Running pod found: %s Retrieving logs...\n\n", pod.Name)
+			foundRunningPod = true
+		}
+	}
+
+	// Print logs before deleting the job
+	podList, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+		LabelSelector: "job-name=codewind-liberty-build-job",
+	})
+
+	for _, pod := range podList.Items {
+		fmt.Printf("Retrieving logs for pod: %s\n\n", pod.Name)
+		req := clientset.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+			Follow: true,
+		})
+		readCloser, err := req.Stream()
+		if err != nil {
+			fmt.Printf("Unable to retrieve logs for pod: %s\n", pod.Name)
+			continue
+		}
+
+		defer readCloser.Close()
+		_, err = io.Copy(os.Stdout, readCloser)
+	}
+
+	// TODO: Set owner references
+	var jobSucceeded bool
 	// Loop and see if the job either succeeded or failed
 	loop := true
 	for loop == true {
@@ -103,9 +151,11 @@ func main() {
 				failed := job.Status.Failed
 				if succeeded == 1 {
 					fmt.Printf("The job %s succeeded\n", job.Name)
+					jobSucceeded = true
 					loop = false
 				} else if failed > 0 {
 					fmt.Printf("The job %s failed\n", job.Name)
+					jobSucceeded = false
 					loop = false
 				}
 			}
@@ -127,23 +177,27 @@ func main() {
 		}
 	}
 
+	if !jobSucceeded {
+		fmt.Println("The job failed, exiting...")
+		os.Exit(1)
+	}
+
 	// Create the Codewind deployment object
 	codewindInstance := Codewind{
 		PFEName:            "cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
 		PFEImage:           "docker.io/maysunfaisal/cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
 		Namespace:          namespace,
-		WorkspaceID:        cheWorkspaceID,
-		PVCName:            workspacePVC,
+		PVCName:            idpClaimName,
 		ServiceAccountName: serviceAccountName,
-		OwnerReferenceName: ownerReferenceName,
-		OwnerReferenceUID:  ownerReferenceUID,
-		Privileged:         true,
+		// OwnerReferenceName: ownerReferenceName,
+		// OwnerReferenceUID:  ownerReferenceUID,
+		Privileged: true,
 	}
 
 	if taskName == "full" {
 		// Deploy Application
-		service := createPFEService(codewindInstance)
 		deploy := createPFEDeploy(codewindInstance)
+		service := createPFEService(codewindInstance)
 
 		fmt.Println("===============================")
 		fmt.Println("Deploying application...")
@@ -162,87 +216,21 @@ func main() {
 	fmt.Println("And that's it folks...")
 }
 
-// CreateBuildTaskKubeJob creates a Kubernetes Job
-func CreateBuildTaskKubeJob(clientset *kubernetes.Clientset, buildTaskJob string, namespace string, cheWorkspaceID string, workspacePVC string, taskName string, projectName string) error {
-	fmt.Printf("Creating job %s\n", buildTaskJob)
-	// Create a Kube job to run mvn compile for a Liberty project
-	mvnCommand := "echo listing /home/default/app && ls -la /home/default/app && echo copying /home/default/app /tmp/app && cp -rf /home/default/app /tmp/app && cd /tmp/app && echo chown, listing and running mvn in /tmp/app: && chown -fR 1001 /tmp/app && ls -la && mvn -B clean package -Dmaven.repo.local=/tmp/app/.m2/repository -DskipTests=true -DlibertyEnv=microclimate -DmicroclimateOutputDir=/tmp/app/mc-target --log-file /home/default/app/maven.package.test.log && echo listing after mvn && ls -la && echo copying tmp/app/mc-target to /home/default/app && cp -rf /tmp/app/mc-target /home/default/app/ && chown -fR 1001 /home/default/app/mc-target && echo listing /home/default/app && ls -la /home/default/app/"
-
-	fmt.Printf("Mvn Command: %s\n", mvnCommand)
-
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      buildTaskJob,
-			Namespace: namespace,
-		},
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: "liberty-project",
-							VolumeSource: corev1.VolumeSource{
-								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-									ClaimName: workspacePVC,
-								},
-							},
-						},
-					},
-					Containers: []corev1.Container{
-						{
-							Name:            "maven-build",
-							Image:           "docker.io/maven:3.6",
-							ImagePullPolicy: corev1.PullAlways,
-							Command:         []string{"/bin/sh", "-c"},
-							Args:            []string{mvnCommand},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "liberty-project",
-									MountPath: "/home/default/app",
-									SubPath:   cheWorkspaceID + "/projects/" + projectName,
-								},
-							},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
-				},
-			},
-		},
-	}
-	kubeJob, err := clientset.BatchV1().Jobs(namespace).Create(job)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("The job %s has been created\n", kubeJob.Name)
-	return nil
-}
-
-// GetWorkspacePVC retrieves the PVC (Persistent Volume Claim) associated with the Che workspace we're deploying Codewind in
-func GetWorkspacePVC(clientset *kubernetes.Clientset, namespace string, cheWorkspaceID string) string {
+// GetIDPPVC retrieves the PVC (Persistent Volume Claim) associated with the Iterative Development Pack
+func GetIDPPVC(clientset *kubernetes.Clientset, namespace string, labels string) string {
 	var pvcName string
 
 	PVCs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{
-		LabelSelector: "che.workspace.volume_name=projects,che.workspace_id=" + cheWorkspaceID,
+		LabelSelector: labels,
 	})
 	if err != nil || PVCs == nil {
 		fmt.Printf("Error, unable to retrieve PVCs: %v\n", err)
 		os.Exit(1)
-	} else if len(PVCs.Items) < 1 {
-		// We couldn't find the workspace PVC, so need to find an alternative.
-		PVCs, err = clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{
-			LabelSelector: "che.workspace_id=" + cheWorkspaceID,
-		})
-		if err != nil || PVCs == nil {
-			fmt.Printf("Error, unable to retrieve PVCs: %v\n", err)
-			os.Exit(1)
-		} else if len(PVCs.Items) != 1 {
-			pvcName = "claim-che-workspace"
-		} else {
-			pvcName = PVCs.Items[0].GetName()
-		}
-	} else {
+	} else if len(PVCs.Items) == 1 {
 		pvcName = PVCs.Items[0].GetName()
+	} else {
+		// We couldn't find the workspace PVC, use a default value
+		pvcName = "claim-che-workspace"
 	}
 
 	return pvcName
@@ -258,49 +246,6 @@ func GetKubeClientConfig() clientcmd.ClientConfig {
 	return clientconfig
 }
 
-// GetOwnerReferences retrieves the owner reference name and UID, allowing us to tie any Codewind resources to the Che workspace
-// Enabling the Kubernetes garbage collector clean everything up when the workspace is deleted
-func GetOwnerReferences(clientset *kubernetes.Clientset, namespace string, cheWorkspaceID string) (string, types.UID) {
-	// Get the Workspace pod
-	var ownerReferenceName string
-	var ownerReferenceUID types.UID
-
-	workspacePod, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
-		LabelSelector: "che.original_name=che-workspace-pod,che.workspace_id=" + cheWorkspaceID,
-	})
-	if err != nil {
-		fmt.Printf("Error: Unable to retrieve the workspace pod %v\n", err)
-		os.Exit(1)
-	}
-	// Retrieve the owner reference name and UID from the workspace pod. This will allow Codewind to be garbage collected by Kube
-	ownerReferenceName = workspacePod.Items[0].GetOwnerReferences()[0].Name
-	ownerReferenceUID = workspacePod.Items[0].GetOwnerReferences()[0].UID
-
-	return ownerReferenceName, ownerReferenceUID
-}
-
-// GetWorkspaceServiceAccount retrieves the Service Account associated with the Che workspace we're deploying Codewind in
-func GetWorkspaceServiceAccount(clientset *kubernetes.Clientset, namespace string, cheWorkspaceID string) string {
-	var serviceAccountName string
-
-	// Retrieve the workspace service account labeled with the Che Workspace ID
-	workspacePod, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
-		LabelSelector: "che.original_name=che-workspace-pod,che.workspace_id=" + cheWorkspaceID,
-	})
-	if err != nil || workspacePod == nil {
-		fmt.Printf("Error retrieving the Che workspace pod %v\n", err)
-		os.Exit(1)
-	} else if len(workspacePod.Items) != 1 {
-		// Default to che-workspace as the Service Account name if one couldn't be found
-		serviceAccountName = "che-workspace"
-	} else {
-		serviceAccountName = workspacePod.Items[0].Spec.ServiceAccountName
-	}
-
-	return serviceAccountName
-
-}
-
 // GetCurrentNamespace gets the current namespace in the Kubernetes context
 func GetCurrentNamespace() string {
 	// Instantiate loader for kubeconfig file.
@@ -310,252 +255,4 @@ func GetCurrentNamespace() string {
 		panic(err)
 	}
 	return namespace
-}
-
-// createPFEDeploy creates a Kubernetes deploy for Codewind, marking the Che workspace as its owner
-func createPFEDeploy(codewind Codewind) appsv1.Deployment {
-	labels := map[string]string{
-		"chart":   "javamicroprofiletemplate-1.0.0",
-		"release": codewind.PFEName,
-	}
-
-	volumes, volumeMounts := setPFEVolumes(codewind)
-	envVars := setPFEEnvVars(codewind)
-
-	return generateDeployment(codewind, "javamicroprofiletemplate", codewind.PFEImage, volumes, volumeMounts, envVars, labels)
-}
-
-// createPFEService creates a Kubernetes service for Codewind, exposing port 9191
-func createPFEService(codewind Codewind) corev1.Service {
-	labels := map[string]string{
-		"chart":   "javamicroprofiletemplate-1.0.0",
-		"release": codewind.PFEName,
-	}
-	return generateService(codewind, labels)
-}
-
-// setPFEVolumes returns the 3 volumes & corresponding volume mounts required by the PFE container:
-// project workspace, buildah volume, and the docker registry secret (the latter of which is optional)
-func setPFEVolumes(codewind Codewind) ([]corev1.Volume, []corev1.VolumeMount) {
-
-	volumes := []corev1.Volume{
-		{
-			Name: "shared-workspace",
-			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: codewind.PVCName,
-				},
-			},
-		},
-	}
-
-	volumeMounts := []corev1.VolumeMount{
-		{
-			Name:      "shared-workspace",
-			MountPath: "/codewind-workspace",
-			SubPath:   codewind.WorkspaceID + "/projects",
-		},
-	}
-
-	return volumes, volumeMounts
-}
-
-func setPFEEnvVars(codewind Codewind) []corev1.EnvVar {
-	booleanTrue := bool(true)
-
-	return []corev1.EnvVar{
-		{
-			Name:  "PORT",
-			Value: "9080",
-		},
-		{
-			Name:  "APPLICATION_NAME",
-			Value: "cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
-		},
-		{
-			Name:  "PROJECT_NAME",
-			Value: "maysunliberty2",
-		},
-		{
-			Name:  "LOG_FOLDER",
-			Value: "maysunliberty2-6c1b1ce0-cb4c-11e9-be96-bfc50f05726d",
-		},
-		{
-			Name:  "IN_K8",
-			Value: "true",
-		},
-		{
-			Name: "IBM_APM_SERVER_URL",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "apm-server-config",
-					},
-					Key:      "ibm_apm_server_url",
-					Optional: &booleanTrue,
-				},
-			},
-		},
-		{
-			Name: "IBM_APM_KEYFILE",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "apm-server-config",
-					},
-					Key:      "ibm_apm_keyfile_password",
-					Optional: &booleanTrue,
-				},
-			},
-		},
-		{
-			Name: "IBM_APM_INGRESS_URL",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "apm-server-config",
-					},
-					Key:      "ibm_apm_ingress_url",
-					Optional: &booleanTrue,
-				},
-			},
-		},
-		{
-			Name: "IBM_APM_KEYFILE_PASSWORD",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "apm-server-config",
-					},
-					Key:      "ibm_apm_keyfile_password",
-					Optional: &booleanTrue,
-				},
-			},
-		},
-		{
-			Name: "IBM_APM_ACCESS_TOKEN",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "apm-server-config",
-					},
-					Key:      "ibm_apm_access_token",
-					Optional: &booleanTrue,
-				},
-			},
-		},
-	}
-}
-
-// generateDeployment returns a Kubernetes deployment object with the given name for the given image.
-// Additionally, volume/volumemounts and env vars can be specified.
-func generateDeployment(codewind Codewind, name string, image string, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount, envVars []corev1.EnvVar, labels map[string]string) appsv1.Deployment {
-	blockOwnerDeletion := true
-	controller := true
-	replicas := int32(1)
-	labels2 := map[string]string{
-		"app":     "javamicroprofiletemplate-selector",
-		"version": "current",
-		"release": codewind.PFEName,
-	}
-	deployment := appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      codewind.PFEName,
-			Namespace: codewind.Namespace,
-			Labels:    labels,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "apps/v1",
-					BlockOwnerDeletion: &blockOwnerDeletion,
-					Controller:         &controller,
-					Kind:               "ReplicaSet",
-					Name:               codewind.OwnerReferenceName,
-					UID:                codewind.OwnerReferenceUID,
-				},
-			},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels2,
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels2,
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: codewind.ServiceAccountName,
-					Volumes:            volumes,
-					Containers: []corev1.Container{
-						{
-							Name:            name,
-							Image:           image,
-							ImagePullPolicy: corev1.PullAlways,
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: &codewind.Privileged,
-							},
-							VolumeMounts: volumeMounts,
-							Command:      []string{"/bin/sh", "-c", "--"},
-							Args:         []string{"/home/default/artifacts/new_entrypoint.sh"},
-							Env:          envVars,
-						},
-					},
-				},
-			},
-		},
-	}
-	return deployment
-}
-
-// generateService returns a Kubernetes service object with the given name, exposed over the specified port
-// for the container with the given labels.
-func generateService(codewind Codewind, labels map[string]string) corev1.Service {
-	blockOwnerDeletion := true
-	controller := true
-
-	port1 := 9080
-	port2 := 9443
-
-	service := corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      codewind.PFEName,
-			Namespace: codewind.Namespace,
-			Labels:    labels,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "apps/v1",
-					BlockOwnerDeletion: &blockOwnerDeletion,
-					Controller:         &controller,
-					Kind:               "ReplicaSet",
-					Name:               codewind.OwnerReferenceName,
-					UID:                codewind.OwnerReferenceUID,
-				},
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeNodePort,
-			Ports: []corev1.ServicePort{
-				{
-					Port: int32(port1),
-					Name: "http",
-				},
-				{
-					Port: int32(port2),
-					Name: "https",
-				},
-			},
-			Selector: map[string]string{
-				"app": "javamicroprofiletemplate-selector",
-			},
-		},
-	}
-	return service
 }
