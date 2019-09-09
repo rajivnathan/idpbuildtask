@@ -15,12 +15,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-//Codewind is a struct of essential data
-type Codewind struct {
-	PFEName            string
-	PerformanceName    string
-	PFEImage           string
-	PerformanceImage   string
+//Microprofile is a struct of essential data
+type Microprofile struct {
+	Name               string
+	Image              string
 	Namespace          string
 	WorkspaceID        string
 	PVCName            string
@@ -82,7 +80,7 @@ func main() {
 	serviceAccountName := "default"
 	fmt.Printf("Service Account: %s\n", serviceAccountName)
 
-	job, err := CreateBuildTaskKubeJob(buildTaskJob1, namespace, idpClaimName, "projects/"+projectName, projectName)
+	job, err := CreateBuildTaskKubeJob(buildTaskJob1, taskName, namespace, idpClaimName, "projects/"+projectName, projectName)
 	if err != nil {
 		fmt.Println("There was a problem with the job configuration, exiting...")
 		panic(err.Error())
@@ -183,9 +181,9 @@ func main() {
 	}
 
 	// Create the Codewind deployment object
-	codewindInstance := Codewind{
-		PFEName:            "cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
-		PFEImage:           "docker.io/maysunfaisal/cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
+	MicroprofileInstance := Microprofile{
+		Name:               "cw-maysunliberty2-6c1b1ce0-cb4c-11e9-be96",
+		Image:              "websphere-liberty:19.0.0.3-webProfile7",
 		Namespace:          namespace,
 		PVCName:            idpClaimName,
 		ServiceAccountName: serviceAccountName,
@@ -196,8 +194,8 @@ func main() {
 
 	if taskName == "full" {
 		// Deploy Application
-		deploy := createPFEDeploy(codewindInstance)
-		service := createPFEService(codewindInstance)
+		deploy := createPFEDeploy(MicroprofileInstance, projectName)
+		service := createPFEService(MicroprofileInstance)
 
 		fmt.Println("===============================")
 		fmt.Println("Deploying application...")
