@@ -7,37 +7,37 @@ import (
 )
 
 // createPFEDeploy creates a Kubernetes deployment
-func createPFEDeploy(codewind Codewind) appsv1.Deployment {
+func createPFEDeploy(buildtask BuildTask, projectName string) appsv1.Deployment {
 	labels := map[string]string{
 		"chart":   "javamicroprofiletemplate-1.0.0",
-		"release": codewind.PFEName,
+		"release": buildtask.Name,
 	}
 
-	volumes, volumeMounts := setPFEVolumes(codewind)
-	envVars := setPFEEnvVars(codewind)
+	volumes, volumeMounts := setPFEVolumes(buildtask, projectName)
+	envVars := setPFEEnvVars(buildtask)
 
-	return generateDeployment(codewind, "javamicroprofiletemplate", codewind.PFEImage, volumes, volumeMounts, envVars, labels)
+	return generateDeployment(buildtask, "javamicroprofiletemplate", buildtask.Image, volumes, volumeMounts, envVars, labels)
 }
 
 // createPFEService creates a Kubernetes service for Codewind, exposing port 9191
-func createPFEService(codewind Codewind) corev1.Service {
+func createPFEService(buildtask BuildTask) corev1.Service {
 	labels := map[string]string{
 		"chart":   "javamicroprofiletemplate-1.0.0",
-		"release": codewind.PFEName,
+		"release": buildtask.Name,
 	}
-	return generateService(codewind, labels)
+	return generateService(buildtask, labels)
 }
 
 // setPFEVolumes returns the 3 volumes & corresponding volume mounts required by the PFE container:
 // project workspace, buildah volume, and the docker registry secret (the latter of which is optional)
-func setPFEVolumes(codewind Codewind) ([]corev1.Volume, []corev1.VolumeMount) {
+func setPFEVolumes(buildtask BuildTask, projectName string) ([]corev1.Volume, []corev1.VolumeMount) {
 
 	volumes := []corev1.Volume{
 		{
 			Name: "idp-volume",
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: codewind.PVCName,
+					ClaimName: buildtask.PVCName,
 				},
 			},
 		},
@@ -46,15 +46,15 @@ func setPFEVolumes(codewind Codewind) ([]corev1.Volume, []corev1.VolumeMount) {
 	volumeMounts := []corev1.VolumeMount{
 		{
 			Name:      "idp-volume",
-			MountPath: "/data/idp/",
-			SubPath:   "projects/projA",
+			MountPath: "/config",
+			SubPath:   "projects/" + projectName + "/buildartifacts/",
 		},
 	}
 
 	return volumes, volumeMounts
 }
 
-func setPFEEnvVars(codewind Codewind) []corev1.EnvVar {
+func setPFEEnvVars(buildTask BuildTask) []corev1.EnvVar {
 	booleanTrue := bool(true)
 
 	return []corev1.EnvVar{
@@ -143,14 +143,14 @@ func setPFEEnvVars(codewind Codewind) []corev1.EnvVar {
 
 // generateDeployment returns a Kubernetes deployment object with the given name for the given image.
 // Additionally, volume/volumemounts and env vars can be specified.
-func generateDeployment(codewind Codewind, name string, image string, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount, envVars []corev1.EnvVar, labels map[string]string) appsv1.Deployment {
+func generateDeployment(buildtask BuildTask, name string, image string, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount, envVars []corev1.EnvVar, labels map[string]string) appsv1.Deployment {
 	// blockOwnerDeletion := true
 	// controller := true
 	replicas := int32(1)
 	labels2 := map[string]string{
 		"app":     "javamicroprofiletemplate-selector",
 		"version": "current",
-		"release": codewind.PFEName,
+		"release": buildtask.Name,
 	}
 	deployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -158,8 +158,8 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      codewind.PFEName,
-			Namespace: codewind.Namespace,
+			Name:      buildtask.Name,
+			Namespace: buildtask.Namespace,
 			Labels:    labels,
 			// OwnerReferences: []metav1.OwnerReference{
 			// 	{
@@ -182,7 +182,7 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 					Labels: labels2,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: codewind.ServiceAccountName,
+					ServiceAccountName: buildtask.ServiceAccountName,
 					Volumes:            volumes,
 					Containers: []corev1.Container{
 						{
@@ -190,11 +190,9 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 							Image:           image,
 							ImagePullPolicy: corev1.PullAlways,
 							SecurityContext: &corev1.SecurityContext{
-								Privileged: &codewind.Privileged,
+								Privileged: &buildtask.Privileged,
 							},
 							VolumeMounts: volumeMounts,
-							Command:      []string{"tail"},
-							Args:         []string{"-f", "/dev/null"},
 							Env:          envVars,
 						},
 					},
@@ -207,7 +205,7 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 
 // generateService returns a Kubernetes service object with the given name, exposed over the specified port
 // for the container with the given labels.
-func generateService(codewind Codewind, labels map[string]string) corev1.Service {
+func generateService(buildtask BuildTask, labels map[string]string) corev1.Service {
 	// blockOwnerDeletion := true
 	// controller := true
 
@@ -220,8 +218,8 @@ func generateService(codewind Codewind, labels map[string]string) corev1.Service
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      codewind.PFEName,
-			Namespace: codewind.Namespace,
+			Name:      buildtask.Name,
+			Namespace: buildtask.Namespace,
 			Labels:    labels,
 			// OwnerReferences: []metav1.OwnerReference{
 			// 	{
