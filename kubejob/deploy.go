@@ -46,9 +46,14 @@ func setPFEVolumes(codewind Codewind) ([]corev1.Volume, []corev1.VolumeMount) {
 	volumeMounts := []corev1.VolumeMount{
 		{
 			Name:      "idp-volume",
-			MountPath: "/data/idp/",
-			SubPath:   "projects/projA",
+			MountPath: "/config",
+			SubPath:   "projects/projA/buildartifacts",
 		},
+		// {
+		// 	Name:      "idp-volume",
+		// 	MountPath: "/resources",
+		// 	SubPath:   "projects/projA/output/target/liberty/wlp/usr/servers/defaultServer/resources",
+		// },
 	}
 
 	return volumes, volumeMounts
@@ -193,9 +198,9 @@ func generateDeployment(codewind Codewind, name string, image string, volumes []
 								Privileged: &codewind.Privileged,
 							},
 							VolumeMounts: volumeMounts,
-							Command:      []string{"tail"},
-							Args:         []string{"-f", "/dev/null"},
-							Env:          envVars,
+							// Command:      []string{"tail"},
+							// Args:         []string{"-f", "/dev/null"},
+							Env: envVars,
 						},
 					},
 				},
