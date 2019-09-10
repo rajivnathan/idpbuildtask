@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,6 +87,8 @@ func main() {
 		panic(err.Error())
 	}
 
+	printTime("Creating job")
+
 	kubeJob, err := clientset.BatchV1().Jobs(namespace).Create(job)
 	if err != nil {
 		fmt.Println("Failed to create a job, exiting...")
@@ -93,6 +96,8 @@ func main() {
 	}
 
 	fmt.Printf("The job %s has been created\n", kubeJob.Name)
+
+	printTime("Job created, waiting for pod to run")
 
 	// Wait for pods to start running so that we can tail the logs
 	fmt.Printf("Waiting for pod to run\n")
@@ -114,6 +119,8 @@ func main() {
 		}
 	}
 
+	printTime("Job running, getting job logs")
+
 	// Print logs before deleting the job
 	podList, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: "job-name=codewind-liberty-build-job",
@@ -133,6 +140,8 @@ func main() {
 		defer readCloser.Close()
 		_, err = io.Copy(os.Stdout, readCloser)
 	}
+
+	printTime("Waiting for job to complete")
 
 	// TODO: Set owner references
 	var jobSucceeded bool
@@ -160,6 +169,8 @@ func main() {
 		}
 	}
 
+	printTime("Deleting the job")
+
 	if loop == false {
 		// delete the job
 		gracePeriodSeconds := int64(0)
@@ -179,6 +190,8 @@ func main() {
 		fmt.Println("The job failed, exiting...")
 		os.Exit(1)
 	}
+
+	printTime("Job deleted")
 
 	// Create the Codewind deployment object
 	BuildTaskInstance := BuildTask{
@@ -253,4 +266,9 @@ func GetCurrentNamespace() string {
 		panic(err)
 	}
 	return namespace
+}
+
+func printTime(msg string) {
+	now := time.Now().Format(time.RFC850)
+	fmt.Println(now + " -> " + msg)
 }
