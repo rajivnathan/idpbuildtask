@@ -1,0 +1,114 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------------< projects:mpnew >---------------------------
+[INFO] Building mpnew 1.0-SNAPSHOT
+[INFO] --------------------------------[ war ]---------------------------------
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ mpnew ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ mpnew ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 4 source files to /tmp/app/target/classes
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ mpnew ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /tmp/app/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ mpnew ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 1 source file to /tmp/app/target/test-classes
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.18.1:test (default-test) @ mpnew ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-server (create-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /tmp/app/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "dropins".
+[INFO] Installing assembly...
+[INFO] Expanding: /data/idp/cache/.m2/repository/com/ibm/websphere/appserver/runtime/wlp-webProfile7/19.0.0.1/wlp-webProfile7-19.0.0.1.zip into /tmp/app/target/liberty
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:create-server (create-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /tmp/app/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "dropins".
+[INFO] CWWKM2112I: Re-using previously installed assembly.
+[INFO] CWWKM2143I: Server defaultServer does not exist. Now creating...
+[INFO] CWWKM2001I: server.config.dir is /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: server.output.dir is /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: Invoke command is [/tmp/app/target/liberty/wlp/bin/server, create, defaultServer].
+[INFO] 
+[INFO] Server defaultServer created.
+[INFO] CWWKM2129I: Server defaultServer has been created at /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Copying 1 file to /tmp/app/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /tmp/app/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /tmp/app/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /tmp/app/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-feature (install-feature) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /tmp/app/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Installing features: [jsp-2.3, servlet-3.1, managedbeans-1.0, jndi-1.0, websocket-1.1, microprofile-1.2]
+[INFO] Product validation completed successfully.
+[INFO] The following features have been installed: mpMetrics-1.0 microProfile-1.2 servlet-3.0 jaxrs-1.1 
+[INFO] 
+[INFO] --- maven-war-plugin:2.6:war (default-war) @ mpnew ---
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.thoughtworks.xstream.converters.collections.TreeMapConverter (file:/data/idp/cache/.m2/repository/com/thoughtworks/xstream/xstream/1.4.4/xstream-1.4.4.jar) to field java.util.TreeMap.comparator
+WARNING: Please consider reporting this to the maintainers of com.thoughtworks.xstream.converters.collections.TreeMapConverter
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+[INFO] Packaging webapp
+[INFO] Assembling webapp [mpnew] in [/tmp/app/target/mpnew-1.0-SNAPSHOT]
+[INFO] Processing war project
+[INFO] Copying webapp resources [/tmp/app/src/main/webapp]
+[INFO] Webapp assembled in [46 msecs]
+[INFO] Building war: /tmp/app/target/mpnew-1.0-SNAPSHOT.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-dash) @ mpnew ---
+[INFO] Copying javametrics-dash-1.4.0.war to /tmp/app/target/liberty/wlp/usr/servers/defaultServer/dropins/javametrics-dash.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-rest) @ mpnew ---
+[INFO] Copying javametrics-rest-1.4.0.war to /tmp/app/target/liberty/wlp/usr/servers/defaultServer/dropins/javametrics-rest.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-agent) @ mpnew ---
+[INFO] Copying javametrics-agent-1.4.0.jar to /tmp/app/target/liberty/wlp/usr/servers/defaultServer/resources/javametrics-agent.jar
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-asm) @ mpnew ---
+[INFO] Copying asm-5.0.4.jar to /tmp/app/target/liberty/wlp/usr/servers/defaultServer/resources/asm/asm-5.0.4.jar
+[INFO] Copying asm-commons-5.0.4.jar to /tmp/app/target/liberty/wlp/usr/servers/defaultServer/resources/asm/asm-commons-5.0.4.jar
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-apps (install-apps) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /tmp/app/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Copying 1 file to /tmp/app/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /tmp/app/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /tmp/app/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /tmp/app/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "apps".
+[INFO] CWWKM2160I: Installing application /tmp/app/target/mpnew-1.0-SNAPSHOT.war.
+[INFO] Copying 1 file to /tmp/app/target/liberty/wlp/usr/servers/defaultServer/apps
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:package-server (package-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /tmp/app/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /tmp/app/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  29.145 s
+[INFO] Finished at: 2019-09-13T19:37:59Z
+[INFO] ------------------------------------------------------------------------
