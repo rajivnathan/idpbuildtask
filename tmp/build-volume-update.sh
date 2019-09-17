@@ -9,7 +9,7 @@ echo chown done
 
 cd /data/idp/src 
 
-echo Run update maven build directly from volume (/data/idp/src)
+echo Run update maven build directly from volume /data/idp/src
 date 
 mvn -B package -DskipLibertyPackage -Dmaven.repo.local=/data/idp/cache/.m2/repository -DskipTests=true 
 

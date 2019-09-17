@@ -1,0 +1,158 @@
+time ./kdo build inc projA false
+Build arguments: inc projA false
+Namespace: default
+Persistent Volume Claim: idp-data-volume
+Service Account: default
+Creating a Kube Job for building...
+Creating job codewind-liberty-build-job
+Command: [/bin/sh -c] [/data/idp/bin/build-volume-update.sh]
+The job codewind-liberty-build-job has been created
+Waiting for pod to run
+Running pod found: codewind-liberty-build-job-qmlb8 Retrieving logs...
+
+Retrieving logs for pod: codewind-liberty-build-job-qmlb8
+
+Started - Update build using volume folders
+Mon Sep 16 21:42:56 UTC 2019
+chown done
+Run update maven build directly from volume /data/idp/src
+Mon Sep 16 21:42:59 UTC 2019
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------------< projects:mpnew >---------------------------
+[INFO] Building mpnew 1.0-SNAPSHOT
+[INFO] --------------------------------[ war ]---------------------------------
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ mpnew ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ mpnew ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 4 source files to /data/idp/src/target/classes
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ mpnew ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /data/idp/src/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ mpnew ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.18.1:test (default-test) @ mpnew ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-server (create-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "apps".
+[INFO] CWWKM2112I: Re-using previously installed assembly.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:create-server (create-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "apps".
+[INFO] CWWKM2112I: Re-using previously installed assembly.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /data/idp/src/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /data/idp/src/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-feature (install-feature) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Installing features: [jsp-2.3, servlet-3.1, managedbeans-1.0, jndi-1.0, websocket-1.1, microprofile-1.2]
+[INFO] CWWKF1250I: The following assets already exist: [jndi-1.0, jsp-2.3, managedBeans-1.0, microProfile-1.2, servlet-3.1, websocket-1.1]. They will not be reinstalled. To modify an existing feature, you must manually uninstall it first.
+[INFO] The features are already installed, so no action is needed.
+[INFO] 
+[INFO] --- maven-war-plugin:2.6:war (default-war) @ mpnew ---
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.thoughtworks.xstream.converters.collections.TreeMapConverter (file:/data/idp/cache/.m2/repository/com/thoughtworks/xstream/xstream/1.4.4/xstream-1.4.4.jar) to field java.util.TreeMap.comparator
+WARNING: Please consider reporting this to the maintainers of com.thoughtworks.xstream.converters.collections.TreeMapConverter
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+[INFO] Packaging webapp
+[INFO] Assembling webapp [mpnew] in [/data/idp/src/target/mpnew-1.0-SNAPSHOT]
+[INFO] Processing war project
+[INFO] Copying webapp resources [/data/idp/src/src/main/webapp]
+[INFO] Webapp assembled in [103 msecs]
+[INFO] Building war: /data/idp/src/target/mpnew-1.0-SNAPSHOT.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-dash) @ mpnew ---
+[INFO] com.ibm.runtimetools:javametrics-dash:war:1.4.0 already exists in destination.
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-rest) @ mpnew ---
+[INFO] com.ibm.runtimetools:javametrics-rest:war:1.4.0 already exists in destination.
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-agent) @ mpnew ---
+[INFO] com.ibm.runtimetools:javametrics-agent:jar:1.4.0 already exists in destination.
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-asm) @ mpnew ---
+[INFO] org.ow2.asm:asm:jar:5.0.4 already exists in destination.
+[INFO] org.ow2.asm:asm-commons:jar:5.0.4 already exists in destination.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-apps (install-apps) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /data/idp/src/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /data/idp/src/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "apps".
+[INFO] CWWKM2160I: Installing application /data/idp/src/target/mpnew-1.0-SNAPSHOT.war.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/apps
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:package-server (package-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.900 s
+[INFO] Finished at: 2019-09-16T21:43:05Z
+[INFO] ------------------------------------------------------------------------
+Mon Sep 16 21:43:05 UTC 2019
+maven build finished
+total 536
+drwxr-xr-x 11 1001 root   4096 Sep 16 21:41 .
+drwxr-xr-x  5 1001 root   4096 Sep 16 21:41 ..
+drwxr-xr-x  3 1001 root   4096 Sep 16 21:41 classes
+drwxr-xr-x  3 1001 root   4096 Sep 16 21:41 generated-sources
+drwxr-xr-x  3 1001 root   4096 Sep 16 21:41 generated-test-sources
+drwxr-xr-x  3 1001 root   4096 Sep 16 21:41 liberty
+drwxr-x---  3 1001 root   4096 Sep 16 21:41 liberty-alt-output-dir
+-rw-r--r--  1 1001 root   1996 Sep 16 21:43 liberty-plugin-config.xml
+drwxr-xr-x  2 1001 root   4096 Sep 16 21:41 maven-archiver
+drwxr-xr-x  3 1001 root   4096 Sep 16 21:41 maven-status
+drwxr-xr-x  4 1001 root   4096 Sep 16 21:41 mpnew-1.0-SNAPSHOT
+-rw-r--r--  1 1001 root  22286 Sep 16 21:43 mpnew-1.0-SNAPSHOT.war
+-rw-r-----  1 1001 root 473528 Sep 16 21:41 mpnew-1.0-SNAPSHOT.zip
+drwxr-xr-x  3 1001 root   4096 Sep 16 21:41 test-classes
+starting copy of war
+Mon Sep 16 21:43:05 UTC 2019
+Mon Sep 16 21:43:05 UTC 2019
+chown the buildartifacts dir
+list /data/idp/buildartifacts/apps
+total 32
+drwxr-x--- 2 1001 root  4096 Sep 16 21:41 .
+drwxr-xr-x 7 1001 root  4096 Sep 16 21:41 ..
+-rw-r--r-- 1 1001 root 22286 Sep 16 21:43 mpnew-1.0-SNAPSHOT.war
+Finished - Update build using volume folders
+Mon Sep 16 21:43:05 UTC 2019
+The job codewind-liberty-build-job succeeded
+The job codewind-liberty-build-job has been deleted
+
+real	0m15.938s
+user	0m0.080s
+sys	0m0.036s

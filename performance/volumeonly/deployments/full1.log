@@ -1,0 +1,232 @@
+time ./kdo build full projA true
+Build arguments: full projA true
+Namespace: default
+Persistent Volume Claim: idp-data-volume
+Service Account: default
+Reusing the build container...
+Checking if Resusable Build Container has already been deployed...
+===============================
+Deploying reusable build container...
+The service has been created.
+The deployment has been created.
+===============================
+Waiting for pod to run
+Running pod found: proja-reusable-build-container-7f6cd5c864-4v49r...
+
+The Resuable Build Container Pod Name: proja-reusable-build-container-7f6cd5c864-4v49r
+Executing command: /bin/sh -c /data/idp/bin/build-volume-full.sh in pod: proja-reusable-build-container-7f6cd5c864-4v49r container: maven-build
+Resuable Build Container STDERR: WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.thoughtworks.xstream.converters.collections.TreeMapConverter (file:/data/idp/cache/.m2/repository/com/thoughtworks/xstream/xstream/1.4.4/xstream-1.4.4.jar) to field java.util.TreeMap.comparator
+WARNING: Please consider reporting this to the maintainers of com.thoughtworks.xstream.converters.collections.TreeMapConverter
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+
+Reusable Build Container Output: 
+Started - Full build using volume folders
+Mon Sep 16 21:50:34 UTC 2019
+listing /data/idp/src
+total 72
+drwxr-xr-x  5 1001 root     4096 Sep 16 21:45 .
+drwxrwxrwx  8 root root     4096 Sep 16 21:45 ..
+-rw-r-xr--  1 1001 dialout   193 Sep  5 11:25 .cw-settings
+-rw-r-xr--  1 1001 dialout   253 Sep  5 11:25 .dockerignore
+-rw-r-xr--  1 1001 dialout   140 Sep  5 11:25 .gitignore
+-rw-r-xr--  1 1001 dialout   607 Sep  5 11:25 Dockerfile
+-rw-r-xr--  1 1001 dialout   366 Sep  5 11:25 Dockerfile-tools
+-rw-r-xr--  1 1001 dialout    94 Sep  5 11:25 Jenkinsfile
+-rw-r-xr--  1 1001 dialout  2748 Sep  5 11:25 README.md
+drwxr-xr-x  3 1001 root     4096 Sep  6 05:15 chart
+-rw-r-xr--  1 1001 dialout 22838 Sep  5 11:25 pom.xml
+drwxr-xr-x  4 1001 root     4096 Sep  6 05:15 src
+drwxr-xr-x 11 1001 root     4096 Sep 16 21:45 target
+chown, listing and running mvn in /data/idp/src
+list contents before maven build
+total 72
+drwxr-xr-x  5 1001 root     4096 Sep 16 21:45 .
+drwxrwxrwx  8 root root     4096 Sep 16 21:45 ..
+-rw-r-xr--  1 1001 dialout   193 Sep  5 11:25 .cw-settings
+-rw-r-xr--  1 1001 dialout   253 Sep  5 11:25 .dockerignore
+-rw-r-xr--  1 1001 dialout   140 Sep  5 11:25 .gitignore
+-rw-r-xr--  1 1001 dialout   607 Sep  5 11:25 Dockerfile
+-rw-r-xr--  1 1001 dialout   366 Sep  5 11:25 Dockerfile-tools
+-rw-r-xr--  1 1001 dialout    94 Sep  5 11:25 Jenkinsfile
+-rw-r-xr--  1 1001 dialout  2748 Sep  5 11:25 README.md
+drwxr-xr-x  3 1001 root     4096 Sep  6 05:15 chart
+-rw-r-xr--  1 1001 dialout 22838 Sep  5 11:25 pom.xml
+drwxr-xr-x  4 1001 root     4096 Sep  6 05:15 src
+drwxr-xr-x 11 1001 root     4096 Sep 16 21:45 target
+Run full maven build directly from volume /data/idp/src
+Mon Sep 16 21:50:36 UTC 2019
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------------< projects:mpnew >---------------------------
+[INFO] Building mpnew 1.0-SNAPSHOT
+[INFO] --------------------------------[ war ]---------------------------------
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:stop-server (stop-server-before-clean) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2152I: Stopping server defaultServer.
+[INFO] CWWKM2001I: server.config.dir is /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: server.output.dir is /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: Invoke command is [/data/idp/src/target/liberty/wlp/bin/server, stop, defaultServer].
+[INFO] 
+[INFO] Stopping server defaultServer.
+[INFO] Server defaultServer is not running.
+[INFO] 
+[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ mpnew ---
+[INFO] Deleting /data/idp/src/target
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ mpnew ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ mpnew ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 4 source files to /data/idp/src/target/classes
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ mpnew ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /data/idp/src/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ mpnew ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 1 source file to /data/idp/src/target/test-classes
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.18.1:test (default-test) @ mpnew ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-server (create-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "dropins".
+[INFO] Installing assembly...
+[INFO] Expanding: /data/idp/cache/.m2/repository/com/ibm/websphere/appserver/runtime/wlp-webProfile7/19.0.0.1/wlp-webProfile7-19.0.0.1.zip into /data/idp/src/target/liberty
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:create-server (create-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "dropins".
+[INFO] CWWKM2112I: Re-using previously installed assembly.
+[INFO] CWWKM2143I: Server defaultServer does not exist. Now creating...
+[INFO] CWWKM2001I: server.config.dir is /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: server.output.dir is /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: Invoke command is [/data/idp/src/target/liberty/wlp/bin/server, create, defaultServer].
+[INFO] 
+[INFO] Server defaultServer created.
+[INFO] CWWKM2129I: Server defaultServer has been created at /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /data/idp/src/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /data/idp/src/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-feature (install-feature) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Installing features: [jsp-2.3, servlet-3.1, managedbeans-1.0, jndi-1.0, websocket-1.1, microprofile-1.2]
+[INFO] Product validation completed successfully.
+[INFO] The following features have been installed: mpMetrics-1.0 microProfile-1.2 servlet-3.0 jaxrs-1.1 
+[INFO] 
+[INFO] --- maven-war-plugin:2.6:war (default-war) @ mpnew ---
+[INFO] Packaging webapp
+[INFO] Assembling webapp [mpnew] in [/data/idp/src/target/mpnew-1.0-SNAPSHOT]
+[INFO] Processing war project
+[INFO] Copying webapp resources [/data/idp/src/src/main/webapp]
+[INFO] Webapp assembled in [65 msecs]
+[INFO] Building war: /data/idp/src/target/mpnew-1.0-SNAPSHOT.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-dash) @ mpnew ---
+[INFO] Copying javametrics-dash-1.4.0.war to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/dropins/javametrics-dash.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-rest) @ mpnew ---
+[INFO] Copying javametrics-rest-1.4.0.war to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/dropins/javametrics-rest.war
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-agent) @ mpnew ---
+[INFO] Copying javametrics-agent-1.4.0.jar to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/resources/javametrics-agent.jar
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.0.1:copy-dependencies (copy-javametrics-asm) @ mpnew ---
+[INFO] Copying asm-5.0.4.jar to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/resources/asm/asm-5.0.4.jar
+[INFO] Copying asm-commons-5.0.4.jar to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/resources/asm/asm-commons-5.0.4.jar
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:install-apps (install-apps) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /data/idp/src/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /data/idp/src/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] CWWKM2185I: The liberty-maven-plugin configuration parameter "appsDirectory" value defaults to "apps".
+[INFO] CWWKM2160I: Installing application /data/idp/src/target/mpnew-1.0-SNAPSHOT.war.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer/apps
+[INFO] 
+[INFO] --- liberty-maven-plugin:2.6.1:package-server (package-server) @ mpnew ---
+[INFO] CWWKM2102I: Using artifact based assembly archive : com.ibm.websphere.appserver.runtime:wlp-webProfile7:null:19.0.0.1:zip.
+[INFO] CWWKM2102I: Using installDirectory : /data/idp/src/target/liberty/wlp.
+[INFO] CWWKM2102I: Using serverName : defaultServer.
+[INFO] CWWKM2102I: Using serverDirectory : /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2112I: Re-using previously installed assembly.
+[INFO] CWWKM2134I: Packaging server defaultServer.
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] Copying 1 file to /data/idp/src/target/liberty/wlp/usr/servers/defaultServer
+[INFO] CWWKM2144I: Update server configuration file server.xml from /data/idp/src/src/main/liberty/config/server.xml.
+[INFO] CWWKM2144I: Update server configuration file jvm.options from /data/idp/src/src/main/liberty/config/jvm.options.
+[INFO] CWWKM2144I: Update server configuration file bootstrap.properties from inlined configuration.
+[INFO] CWWKM2136I: Package file location is /data/idp/src/target/mpnew-1.0-SNAPSHOT.zip.
+[INFO] CWWKM2001I: server.config.dir is /data/idp/src/target/liberty/wlp/usr/servers/defaultServer.
+[INFO] CWWKM2001I: server.output.dir is /data/idp/src/target/liberty-alt-output-dir/defaultServer.
+[INFO] CWWKM2001I: Invoke command is [/data/idp/src/target/liberty/wlp/bin/server, package, defaultServer, --archive=/data/idp/src/target/mpnew-1.0-SNAPSHOT.zip, --include=usr].
+[INFO] 
+[INFO] Packaging server defaultServer.
+[INFO] Server defaultServer package complete in /data/idp/src/target/mpnew-1.0-SNAPSHOT.zip.
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  26.445 s
+[INFO] Finished at: 2019-09-16T21:51:04Z
+[INFO] ------------------------------------------------------------------------
+Mon Sep 16 21:51:04 UTC 2019
+listing after mvn
+total 72
+drwxr-xr-x  5 1001 root     4096 Sep 16 21:50 .
+drwxrwxrwx  8 root root     4096 Sep 16 21:45 ..
+-rw-r-xr--  1 1001 dialout   193 Sep  5 11:25 .cw-settings
+-rw-r-xr--  1 1001 dialout   253 Sep  5 11:25 .dockerignore
+-rw-r-xr--  1 1001 dialout   140 Sep  5 11:25 .gitignore
+-rw-r-xr--  1 1001 dialout   607 Sep  5 11:25 Dockerfile
+-rw-r-xr--  1 1001 dialout   366 Sep  5 11:25 Dockerfile-tools
+-rw-r-xr--  1 1001 dialout    94 Sep  5 11:25 Jenkinsfile
+-rw-r-xr--  1 1001 dialout  2748 Sep  5 11:25 README.md
+drwxr-xr-x  3 1001 root     4096 Sep  6 05:15 chart
+-rw-r-xr--  1 1001 dialout 22838 Sep  5 11:25 pom.xml
+drwxr-xr-x  4 1001 root     4096 Sep  6 05:15 src
+drwxr-xr-x 11 root root     4096 Sep 16 21:51 target
+rm -rf /data/idp/buildartifacts and copying artifacts
+Mon Sep 16 21:51:04 UTC 2019
+Mon Sep 16 21:51:04 UTC 2019
+chown the buildartifacts dir
+Finished - Full build using volume folders
+Mon Sep 16 21:51:04 UTC 2019
+
+Finished executing the IDP Build Task in the Resuable Build Container...
+Deploying application on a full build
+===============================
+Deploying application...
+The service has been created.
+The deployment has been created.
+===============================
+
+real	0m34.923s
+user	0m0.093s
+sys	0m0.040s
